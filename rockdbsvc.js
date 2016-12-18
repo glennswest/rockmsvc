@@ -6,6 +6,12 @@ const winston = require('winston');
 winston.level = 'debug';
 winston.info(require.main.filename);
 
+winston.debug("Load Up LevelUp")
+var levelup = require('levelup')
+winston.debug("Setup Connection to Rocksdb")
+var db = levelup('mydb')
+
+winston.debug("Setup Restify Server")
 const server = restify.createServer({
   name: 'myapp',
   version: '1.0.0'
