@@ -22,7 +22,9 @@
   },
   "homepage": "https://github.com/glennswest/rockmsvc#readme",
   "dependencies": {
+    "flat-rocks": "github:glennswest/flat-rocks#master",
     "mqtt": "^2.1.3",
+    "nan": "^2.4.0",
     "restify": "^4.3.0",
     "restify-plugins": "^1.4.0",
     "uuid": "^3.0.1",
