@@ -2,8 +2,16 @@ var util = require('util');
 var restify = require('restify');
 var plugins = require('restify-plugins');
 var uuid = require('uuid/v4');
+var global.levelup = require('levelup')
+
 
 const winston = require('winston');
+
+winston.level = 'debug';
+winston.debug("Load Up LevelUp")
+winston.info(require.main.filename);
+winston.debug("Setup Connection to Rocksdb")
+var global.db = global.levelup('mydb')
 
 function MkKey(req)
 {
@@ -25,16 +33,13 @@ function postNewData(req , res , next){
     k = MkKey(req);
     winston.debug(util.inspect(k));
     winston.debug(util.inspect(req.params));
+    global.db.put(k,req.params,function(err){
+          winston.error("Rocksdb: " + err);
+          });
     return next();
 }
 
-winston.level = 'debug';
-winston.info(require.main.filename);
 
-winston.debug("Load Up LevelUp")
-var levelup = require('levelup')
-winston.debug("Setup Connection to Rocksdb")
-var db = levelup('mydb')
 
 winston.debug("Setup Restify Server")
 const server = restify.createServer({
