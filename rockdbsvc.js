@@ -44,7 +44,8 @@ function postNewData(req , res , next){
     db.close();
    
     res.send(res.statusCode,k.k);
-    return next();
+    next();
+    return;
 }
 
 
