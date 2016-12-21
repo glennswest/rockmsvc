@@ -34,10 +34,16 @@ function postNewData(req , res , next){
     k = MkKey(req);
     winston.debug(util.inspect(k));
     winston.debug(util.inspect(req.params));
+    res.statusCode = 200;
     db.put(k,req.params,function(err){
-          winston.error("Rocksdb: " + err);
+          if (err){
+            res.statusCode = 400;
+            winston.error("Rocksdb: " + util.inspect(err));
+            }
           });
     db.close();
+   
+    res.send(res.statusCode,k.k);
     return next();
 }
 
@@ -70,7 +76,7 @@ server.get('/echo/:_tablename', function (req, res, next) {
  
 //server.get({path : PATH , version : '0.0.1'} , findAllData);
 //server.get({path : PATH +'/:dataId' , version : '0.0.1'} , findData);
-server.post('/v1/:_tablename/', function(req, res, next){ postNewData(req, res, next);} );
+server.post('/v1/:_tablename/', postNewData );
 //server.del({path : PATH +'/:dataId' , version: '0.0.1'} ,deleteData);
 
 
