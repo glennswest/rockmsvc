@@ -3,13 +3,22 @@ var restify = require('restify');
 var plugins = require('restify-plugins');
 var uuid = require('uuid/v4');
 
-
 const winston = require('winston');
 
 winston.level = 'debug';
-winston.debug("Load Up LevelUp")
 winston.info(require.main.filename);
+
 winston.debug("Setup Connection to Rocksdb")
+var levelup = require('levelup')
+var db = levelup('mydb')
+
+function RdKey(req)
+{
+        var key = {};
+	key.n = req.params._tablename;
+        key.k = req.params._dataid;
+        return(key);
+}
 
 function MkKey(req)
 {
@@ -25,14 +34,10 @@ function MkKey(req)
        return(key);
 }
 
-function postNewData(req , res , next){
+function postNewData(db, req , res , next){
     
+    winston.debug("postNewData");
     // winston.debug(util.inspect(req));
-    if (!levelup){
-       winston.debug("Open Database");
-       var levelup = require('levelup')
-       var db = levelup('mydb')
-       }
     winston.debug("req: " + req.params._tablename);
     k = MkKey(req);
     winston.debug(util.inspect(k));
@@ -50,6 +55,27 @@ function postNewData(req , res , next){
     return;
 }
 
+function findData(db, req, res , next){
+    winston.debug("findData");
+    res.setHeader('Access-Control-Allow-Origin','*');
+    //winston.debug(util.inspect(req));
+    winston.debug("req: " + req.params._tablename);
+    k = RdKey(req);
+    winston.debug(util.inspect(k));
+    //winston.debug(util.inspect(req.params));
+    res.statusCode = 200;
+    db.get(k,function(err,value){
+          if (err){
+            res.statusCode = 400;
+            winston.error("Rocksdb: " + util.inspect(err));
+            } else {
+              winston.debug("findData: Object: " + util.inspect(value));
+              res.send(res.statusCode,value);
+            }
+          });
+    next();
+    return;
+}
 
 
 winston.debug("Setup Restify Server")
@@ -78,8 +104,10 @@ server.get('/echo/:_tablename', function (req, res, next) {
 });
  
 //server.get({path : PATH , version : '0.0.1'} , findAllData);
-//server.get({path : PATH +'/:dataId' , version : '0.0.1'} , findData);
-server.post('/v1/:_tablename/', postNewData );
+server.get('/v1/:_tablename/:_dataid', function(req, res, next){
+            findData(db,req,res,next);});
+server.post('/v1/:_tablename/', function(req, res, next){
+            postNewData(db,req,res,next);});
 //server.del({path : PATH +'/:dataId' , version: '0.0.1'} ,deleteData);
 
 
@@ -104,18 +132,6 @@ function findAllData(req, res , next){
  
 }
  
-function findData(req, res , next){
-    res.setHeader('Access-Control-Allow-Origin','*');
-    jobs.findOne({_id:mongojs.ObjectId(req.params.jobId)} , function(err , success){
-        console.log('Response success '+success);
-        console.log('Response error '+err);
-        if(success){
-            res.send(200 , success);
-            return next();
-        }
-        return next(err);
-    })
-}
 
 function deleteData(req , res , next){
     res.setHeader('Access-Control-Allow-Origin','*');
