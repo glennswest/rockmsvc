@@ -28,8 +28,11 @@ function MkKey(req)
 function postNewData(req , res , next){
     
     // winston.debug(util.inspect(req));
-    var levelup = require('levelup')
-    var db = levelup('mydb')
+    if (!levelup){
+       winston.debug("Open Database");
+       var levelup = require('levelup')
+       var db = levelup('mydb')
+       }
     winston.debug("req: " + req.params._tablename);
     k = MkKey(req);
     winston.debug(util.inspect(k));
@@ -41,7 +44,6 @@ function postNewData(req , res , next){
             winston.error("Rocksdb: " + util.inspect(err));
             }
           });
-    db.close();
    
     res.send(res.statusCode,k.k);
     next();
