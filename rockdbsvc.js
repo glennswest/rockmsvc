@@ -1,3 +1,6 @@
+// Getting started check out:
+// http://dailyjs.com/2013/05/02/leveldb-and-node-2/#
+
 var util = require('util');
 var restify = require('restify');
 var plugins = require('restify-plugins');
