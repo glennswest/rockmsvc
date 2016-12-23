@@ -25,7 +25,7 @@
             '-std=c++11'
         ]
       , "libraries": [
-            "/usr/lib/librocksdb.so"
+            "/usr/local/lib/librocksdb.so"
         ]
       , "include_dirs"  : [
             "<!(node -e \"require('nan')\")"

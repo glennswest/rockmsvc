@@ -8,7 +8,7 @@ var uuid = require('uuid/v4');
 
 const winston = require('winston');
 
-winston.level = 'debug';
+winston.level = 'info';
 winston.info(require.main.filename);
 
 winston.debug("Setup Connection to Rocksdb")
@@ -42,17 +42,19 @@ function RdAllKeyEnd(req)
 function MkKey(req)
 {
         var key = "";
-        metadata.t = req.params._tablename;
-        delete req.parms._tablename;
+        metadata = {};
 	key = key + req.params._tablename;
-        if ("_key" in req.params){
-           metadata.k =  req.params._key;
-           delete req.parms._key;
+        if ("id" in req.params){
+           k =  req.params.id;
           } else {
-           metadata.k = uuid();
+           k = uuid();
+           req.params.id = k;
           }
-       key = key + "\x00" + metadata.k;
-       return(key);
+       key = key + "\x00" + k;
+       metadata.id  = k;
+       metadata.tab = req.params._tablename;
+       metadata.key = key;
+       return(metadata);
 }
 
 function metadata(){
@@ -63,16 +65,20 @@ function metadata(){
 
 function postNewData(db, req , res , next){
     
-    winston.debug("postNewData");
     // winston.debug(util.inspect(req));
     winston.debug("req: " + req.params._tablename);
-    metadata = {};
-    k = MkKey(req,metadata);
-    winston.debug(util.inspect(k));
-    winston.debug(util.inspect(req.params));
+    metadata = MkKey(req);
+    k = metadata.key;
+    //winston.debug(util.inspect(k));
+    //winston.debug(util.inspect(req.params));
     res.statusCode = 200;
-    var data["meta"] = metadata;
-    var data["data"] = req.params;
+    data = {};
+    
+    data.meta = metadata;
+    data.data = req.params;
+    data.data.id = metadata.id;
+    delete data.data._tablename;
+    //winston.debug("Before Put" + util.inspect(data));
     db.put(k,data,function(err){
           if (err){
             res.statusCode = 400;
@@ -80,7 +86,7 @@ function postNewData(db, req , res , next){
             }
           });
    
-    res.send(res.statusCode,k.k);
+    res.send(res.statusCode,data.data.id);
     next();
     return;
 }
@@ -89,7 +95,7 @@ function findData(db, req, res , next){
     winston.debug("findData");
     res.setHeader('Access-Control-Allow-Origin','*');
     //winston.debug(util.inspect(req));
-    winston.debug("req: " + req.params._tablename);
+    //winston.debug("req: " + req.params._tablename);
     k = RdKey(req);
     winston.debug(util.inspect(k));
     //winston.debug(util.inspect(req.params));
@@ -108,19 +114,27 @@ function findData(db, req, res , next){
 }
 
 function findAllData(db, req, res , next){
-var entries = [];
 
     winston.debug("findAllData");
     res.setHeader('Access-Control-Allow-Origin','*');
     //winston.debug(util.inspect(req));
-    winston.debug("req: " + req.params._tablename);
+    //winston.debug("req: " + req.params._tablename);
     sk = RdAllKeyStart(req);
     ek = RdAllKeyEnd(req);
+    //winston.debug("sk: " + util.inspect(sk));
+    //winston.debug("ek: " + util.inspect(ek));
     res.statusCode = 200;
+    entries = [];
     db.createReadStream({ start: sk, end: ek })
-        .on('data', function (entry) { entries.push(entry["data"]) })
+        .on('data', function (entry) { entries.push(entry.value.data); })
         .on('close', function() { 
-           res.send(res.statusCode,entries); });
+           if (entries){
+              res.send(res.statusCode,entries); 
+             } else {
+              res.statusCode = 400;
+              res.send(res.statusCode);
+            }
+          });
     next();
     return;
 
