@@ -18,6 +18,10 @@ client.get('/v1/macaddress/glenn', function(err, req, res, obj){
 	//console.log(util.inspect(res));
         console.log(util.inspect(obj));
         } );	
+client.get('/v1/macaddress', function(err, req, res, obj){
+	//console.log(util.inspect(res));
+        console.log(util.inspect(obj));
+        } );	
 
 console.log("Finished");
 

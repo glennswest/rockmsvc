@@ -17,24 +17,48 @@ var db = levelup('mydb', { valueEncoding: 'json' })
 
 function RdKey(req)
 {
-        var key = {};
-	key.n = req.params._tablename;
-        key.k = req.params._dataid;
+        var key = "";
+	key = key + req.params._tablename;
+        key = key + "\x00" + req.params._dataid;
+        return(key);
+}
+
+function RdAllKeyStart(req)
+{
+        var key = "";
+	key = key + req.params._tablename;
+        key = key + "\x00";
+        return(key);
+}
+
+function RdAllKeyEnd(req)
+{
+        var key = "";
+	key = key + req.params._tablename;
+        key = key + "\xff";
         return(key);
 }
 
 function MkKey(req)
 {
-        var key = {};
-	key.n = req.params._tablename;
-        delete req.params._tablename;
+        var key = "";
+        metadata.t = req.params._tablename;
+        delete req.parms._tablename;
+	key = key + req.params._tablename;
         if ("_key" in req.params){
-           key.k = req.params._key;
-           delete req.params._key;
+           metadata.k =  req.params._key;
+           delete req.parms._key;
           } else {
-           key.k = uuid();
+           metadata.k = uuid();
           }
+       key = key + "\x00" + metadata.k;
        return(key);
+}
+
+function metadata(){
+   this.data = {};
+   this.meta = {};
+   return(this);
 }
 
 function postNewData(db, req , res , next){
@@ -42,11 +66,14 @@ function postNewData(db, req , res , next){
     winston.debug("postNewData");
     // winston.debug(util.inspect(req));
     winston.debug("req: " + req.params._tablename);
-    k = MkKey(req);
+    metadata = {};
+    k = MkKey(req,metadata);
     winston.debug(util.inspect(k));
     winston.debug(util.inspect(req.params));
     res.statusCode = 200;
-    db.put(k,req.params,function(err){
+    var data["meta"] = metadata;
+    var data["data"] = req.params;
+    db.put(k,data,function(err){
           if (err){
             res.statusCode = 400;
             winston.error("Rocksdb: " + util.inspect(err));
@@ -73,14 +100,31 @@ function findData(db, req, res , next){
             winston.error("Rocksdb: " + util.inspect(err));
             } else {
               winston.debug("findData: Object: " + util.inspect(value));
-              res.send(res.statusCode,value);
+              res.send(res.statusCode,value["data"]);
             }
           });
     next();
     return;
 }
 
+function findAllData(db, req, res , next){
+var entries = [];
 
+    winston.debug("findAllData");
+    res.setHeader('Access-Control-Allow-Origin','*');
+    //winston.debug(util.inspect(req));
+    winston.debug("req: " + req.params._tablename);
+    sk = RdAllKeyStart(req);
+    ek = RdAllKeyEnd(req);
+    res.statusCode = 200;
+    db.createReadStream({ start: sk, end: ek })
+        .on('data', function (entry) { entries.push(entry["data"]) })
+        .on('close', function() { 
+           res.send(res.statusCode,entries); });
+    next();
+    return;
+
+}
 winston.debug("Setup Restify Server")
 const server = restify.createServer({
   name: 'myapp',
@@ -106,7 +150,8 @@ server.get('/echo/:_tablename', function (req, res, next) {
   return next();
 });
  
-//server.get({path : PATH , version : '0.0.1'} , findAllData);
+server.get('/v1/:_tablename', function(req, res, next){
+            findAllData(db,req,res,next);});
 server.get('/v1/:_tablename/:_dataid', function(req, res, next){
             findData(db,req,res,next);});
 server.post('/v1/:_tablename/', function(req, res, next){
@@ -119,21 +164,6 @@ server.listen(8080, function () {
 });
 
  
-function findAllData(req, res , next){
-    res.setHeader('Access-Control-Allow-Origin','*');
-    jobs.find().limit(20).sort({postedOn : -1} , function(err , success){
-        console.log('Response success '+success);
-        console.log('Response error '+err);
-        if(success){
-            res.send(200 , success);
-            return next();
-        }else{
-            return next(err);
-        }
- 
-    });
- 
-}
  
 
 function deleteData(req , res , next){
