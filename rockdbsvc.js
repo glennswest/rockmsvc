@@ -57,12 +57,6 @@ function MkKey(req)
        return(metadata);
 }
 
-function metadata(){
-   this.data = {};
-   this.meta = {};
-   return(this);
-}
-
 function postNewData(db, req , res , next){
     
     // winston.debug(util.inspect(req));
@@ -139,6 +133,26 @@ function findAllData(db, req, res , next){
     return;
 
 }
+
+function deleteData(req , res , next){
+    res.setHeader('Access-Control-Allow-Origin','*');
+
+    k = RdKey(req);
+    winston.debug(util.inspect(k));
+    //winston.debug(util.inspect(req.params));
+    res.statusCode = 204;
+    db.del(k,function(err,value){
+          if (err){
+            res.statusCode = 400;
+            winston.error("Rocksdb: " + util.inspect(err));
+            } else {
+              res.send(res.statusCode);
+            }
+          });
+    next();
+    return;
+}
+
 winston.debug("Setup Restify Server")
 const server = restify.createServer({
   name: 'myapp',
@@ -170,8 +184,8 @@ server.get('/v1/:_tablename/:_dataid', function(req, res, next){
             findData(db,req,res,next);});
 server.post('/v1/:_tablename/', function(req, res, next){
             postNewData(db,req,res,next);});
-//server.del({path : PATH +'/:dataId' , version: '0.0.1'} ,deleteData);
-
+server.del('/v1/:_tablename/:_dataid', function(req, res, next){
+            deleteData(db,req,res,next);});
 
 server.listen(8080, function () {
   console.log('%s listening at %s', server.name, server.url);
@@ -180,18 +194,4 @@ server.listen(8080, function () {
  
  
 
-function deleteData(req , res , next){
-    res.setHeader('Access-Control-Allow-Origin','*');
-    jobs.remove({_id:mongojs.ObjectId(req.params.jobId)} , function(err , success){
-        console.log('Response success '+success);
-        console.log('Response error '+err);
-        if(success){
-            res.send(204);
-            return next();      
-        } else{
-            return next(err);
-        }
-    })
- 
-}
 
