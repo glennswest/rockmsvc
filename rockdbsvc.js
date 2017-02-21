@@ -12,7 +12,7 @@ winston.level = 'info';
 winston.info(require.main.filename);
 
 winston.debug("Setup Connection to Rocksdb")
-var levelup = require('levelup')
+var levelup = require('level')
 var db = levelup('mydb', { valueEncoding: 'json' })
 
 function RdKey(req)
