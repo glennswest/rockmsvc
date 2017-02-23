@@ -173,6 +173,12 @@ server.use(restify.bodyParser({
 
 
  
+server.get('/healthz', function (req, res, next) {
+  res.statusCode = 200;
+  res.send(res.statusCode);
+  return next();
+});
+
 server.get('/echo/:_tablename', function (req, res, next) {
   res.send(req.params);
   return next();
