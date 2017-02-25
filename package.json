@@ -1,6 +1,6 @@
 {
   "name": "rockmsvc",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A NPM Module designed to create a basic message driven microservice using rockdb/leveldb, mqtt and rest\"",
   "main": "rockdbsvc.js",
   "scripts": {
