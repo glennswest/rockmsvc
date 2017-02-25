@@ -5,6 +5,7 @@ var util = require('util');
 var restify = require('restify');
 var plugins = require('restify-plugins');
 var uuid = require('uuid/v4');
+var fs = require('fs');
 
 const winston = require('winston');
 
@@ -13,7 +14,13 @@ winston.info(require.main.filename);
 
 winston.debug("Setup Connection to Rocksdb")
 var levelup = require('level')
-var db = levelup('mydb', { valueEncoding: 'json' })
+if (fs.existsSync("/data")) {
+    console.log("Using /data for database storage");
+    var db = levelup('/data/mydb', { valueEncoding: 'json' });
+   } else {
+   console.log("Using . for database storage");
+   var db = levelup('mydb', { valueEncoding: 'json' })
+   }
 
 function RdKey(req)
 {
